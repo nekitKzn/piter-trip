@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Петербург · маршруты на 4 дня</title>
+  <meta name="description" content="Интерактивная карта поездки по Санкт-Петербургу 24–27 сентября 2026" />
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://tile.openstreetmap.org" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2318324b'/%3E%3Cpath d='M10 44c10-13 20 10 30-4s14-8 14-8' fill='none' stroke='%23f0a85d' stroke-width='6' stroke-linecap='round'/%3E%3Ccircle cx='12' cy='43' r='6' fill='%23fff'/%3E%3Ccircle cx='53' cy='32' r='6' fill='%23fff'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --navy: #18324b;
+      --navy-2: #24465f;
+      --ink: #17232d;
+      --muted: #667785;
+      --paper: #f5f7f7;
+      --line: #d9e1e4;
+      --white: #fff;
+      --thursday: #2b6cb0;
+      --friday: #c47822;
+      --saturday: #247a72;
+      --sunday: #bc4b51;
+      --shadow: 0 12px 35px rgba(17, 35, 49, .14);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      overflow: hidden;
+    }
+    button, a { font: inherit; }
+    button { color: inherit; }
+    .app { height: 100%; display: grid; grid-template-rows: auto auto 1fr; }
+    header {
+      min-height: 68px;
+      padding: 14px 22px;
+      background: var(--navy);
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      justify-content: space-between;
+      z-index: 1001;
+    }
+    .title-wrap { min-width: 0; }
+    h1 { margin: 0; font-size: clamp(1.12rem, 2vw, 1.45rem); line-height: 1.15; letter-spacing: -.02em; }
+    .subtitle { margin-top: 4px; color: #bfcdd7; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .header-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+    .ghost-btn {
+      border: 1px solid rgba(255,255,255,.25);
+      color: white;
+      background: rgba(255,255,255,.08);
+      border-radius: 10px;
+      min-height: 40px;
+      padding: 0 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .ghost-btn:hover { background: rgba(255,255,255,.15); }
+    .days {
+      background: white;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 18px;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      z-index: 1000;
+      scrollbar-width: none;
+    }
+    .days::-webkit-scrollbar { display: none; }
+    .day-btn {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 999px;
+      min-height: 42px;
+      padding: 7px 15px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .day-btn:hover { transform: translateY(-1px); border-color: #aebdc5; }
+    .day-btn[aria-selected="true"] { color: white; border-color: transparent; box-shadow: 0 5px 14px rgba(24,50,75,.16); }
+    .day-btn .dot { width: 10px; height: 10px; border-radius: 50%; background: currentColor; box-shadow: inset 0 0 0 2px rgba(255,255,255,.55); }
+    .day-btn small { display: block; opacity: .72; font-size: .72rem; }
+    main { min-height: 0; display: grid; grid-template-columns: 390px 1fr; }
+    .panel {
+      position: relative;
+      z-index: 500;
+      background: rgba(255,255,255,.98);
+      border-right: 1px solid var(--line);
+      overflow-y: auto;
+      padding: 20px 18px 30px;
+    }
+    .day-summary { margin-bottom: 18px; }
+    .day-kicker { display: flex; align-items: center; gap: 8px; font-size: .78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--active); }
+    .day-title { margin: 6px 0 4px; font-size: 1.45rem; line-height: 1.12; letter-spacing: -.025em; }
+    .day-note { margin: 0; color: var(--muted); line-height: 1.45; font-size: .92rem; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 15px; }
+    .metric { padding: 10px; border: 1px solid var(--line); border-radius: 11px; background: #f8fafb; }
+    .metric b { display: block; font-size: .93rem; }
+    .metric span { color: var(--muted); font-size: .7rem; }
+    .tools { display: flex; gap: 8px; margin: 13px 0 17px; }
+    .tool-btn {
+      min-height: 40px;
+      flex: 1;
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: .82rem;
+    }
+    .tool-btn:hover { border-color: var(--active); color: var(--active); }
+    .timeline { list-style: none; padding: 0; margin: 0; position: relative; }
+    .timeline::before { content: ""; position: absolute; top: 12px; bottom: 12px; left: 19px; width: 2px; background: var(--line); }
+    .stop {
+      position: relative;
+      display: grid;
+      grid-template-columns: 40px 1fr;
+      gap: 10px;
+      padding: 0 0 14px;
+    }
+    .stop:last-child { padding-bottom: 0; }
+    .stop-marker {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      border: 3px solid white;
+      background: var(--active);
+      color: white;
+      font-size: .8rem;
+      font-weight: 800;
+      box-shadow: 0 2px 8px rgba(22,45,62,.22);
+      z-index: 1;
+    }
+    .stop-card {
+      border: 1px solid var(--line);
+      background: white;
+      border-radius: 12px;
+      padding: 11px 12px;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .stop-card:hover, .stop-card:focus-visible { border-color: var(--active); box-shadow: 0 7px 20px rgba(18,43,61,.09); outline: none; }
+    .stop-top { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; }
+    .stop-time { color: var(--active); font-weight: 850; font-size: .82rem; white-space: nowrap; }
+    .stop-name { margin: 3px 0 4px; font-weight: 800; font-size: .98rem; }
+    .stop-desc { margin: 0; color: var(--muted); line-height: 1.35; font-size: .8rem; }
+    .mode { font-size: .7rem; color: var(--muted); white-space: nowrap; }
+    #map { width: 100%; height: 100%; background: #dfe9eb; }
+    .leaflet-control-zoom { border: none !important; box-shadow: var(--shadow) !important; }
+    .leaflet-control-zoom a { color: var(--navy) !important; }
+    .leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: var(--shadow); }
+    .leaflet-popup-content { margin: 15px 16px; min-width: 220px; }
+    .pop-time { color: var(--active); font-size: .78rem; font-weight: 850; }
+    .pop-title { margin: 4px 0 5px; font-weight: 850; font-size: 1rem; }
+    .pop-address { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+    .pop-actions { display: flex; gap: 7px; margin-top: 11px; }
+    .pop-actions a, .pop-actions button { border: 0; text-decoration: none; background: var(--navy); color: white; border-radius: 9px; padding: 8px 10px; cursor: pointer; font-size: .76rem; font-weight: 750; }
+    .number-icon { background: transparent; border: 0; }
+    .map-pin {
+      width: 31px; height: 31px; border-radius: 50% 50% 50% 8px;
+      transform: rotate(-45deg); display: grid; place-items: center;
+      color: white; border: 3px solid white; box-shadow: 0 3px 12px rgba(23,40,53,.32);
+    }
+    .map-pin span { transform: rotate(45deg); font-size: .76rem; font-weight: 900; }
+    .legend {
+      background: rgba(255,255,255,.95);
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      padding: 9px 11px;
+      box-shadow: 0 6px 20px rgba(27,50,65,.12);
+      font-size: .72rem;
+      line-height: 1.55;
+    }
+    .legend-row { display: flex; align-items: center; gap: 6px; }
+    .legend-line { width: 21px; height: 3px; background: var(--active); }
+    .legend-line.dash { background: repeating-linear-gradient(90deg,var(--active) 0 5px,transparent 5px 8px); }
+    .notice {
+      position: absolute; right: 14px; bottom: 15px; z-index: 800;
+      max-width: 320px; padding: 10px 12px; border-radius: 11px;
+      background: rgba(24,50,75,.93); color: white; font-size: .72rem; line-height: 1.35;
+      box-shadow: var(--shadow);
+    }
+    .sheet-handle { display: none; }
+    @media (max-width: 780px) {
+      body { overflow: hidden; }
+      header { min-height: 62px; padding: 11px 14px; }
+      .subtitle { font-size: .75rem; }
+      .ghost-btn span { display: none; }
+      .ghost-btn { width: 40px; justify-content: center; padding: 0; }
+      .days { padding: 8px 10px; }
+      .day-btn { min-height: 40px; padding: 6px 12px; }
+      main { position: relative; display: block; }
+      #map { height: 100%; }
+      .panel {
+        position: absolute; left: 0; right: 0; bottom: 0; height: 43%;
+        border: 0; border-radius: 20px 20px 0 0; box-shadow: 0 -8px 30px rgba(18,37,51,.16);
+        padding: 23px 14px 28px;
+      }
+      .sheet-handle { display: block; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 42px; height: 4px; background: #c6d0d5; border-radius: 99px; }
+      .day-title { font-size: 1.22rem; }
+      .day-note { font-size: .84rem; }
+      .metrics { margin-top: 11px; }
+      .metric { padding: 8px; }
+      .tools { margin: 10px 0 14px; }
+      .notice { bottom: calc(43% + 12px); left: 12px; right: 12px; max-width: none; }
+      .leaflet-control-zoom { margin-bottom: calc(43vh + 16px) !important; }
+    }
+    @media (max-width: 430px) {
+      .day-btn small { display: none; }
+      .metrics { grid-template-columns: 1fr 1fr 1fr; }
+      .metric b { font-size: .82rem; }
+      .metric span { font-size: .65rem; }
+    }
+    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="title-wrap">
+        <h1>Петербург · маршруты на 4 дня</h1>
+        <div class="subtitle">24–27 сентября 2026 · старт и финиш: Садовая, 48</div>
+      </div>
+      <div class="header-actions">
+        <button class="ghost-btn" id="shareBtn" aria-label="Поделиться картой">↗ <span>Поделиться</span></button>
+      </div>
+    </header>
+    <nav class="days" role="tablist" aria-label="Выбор дня" id="dayTabs"></nav>
+    <main>
+      <aside class="panel" id="panel">
+        <span class="sheet-handle" aria-hidden="true"></span>
+        <section class="day-summary" id="summary"></section>
+        <div class="tools">
+          <button class="tool-btn" id="fitBtn">Показать весь маршрут</button>
+          <button class="tool-btn" id="hotelBtn">Вернуться к отелю</button>
+        </div>
+        <ol class="timeline" id="timeline"></ol>
+      </aside>
+      <div id="map" role="application" aria-label="Интерактивная карта маршрута"></div>
+      <div class="notice">Линии показывают порядок остановок. Для точной навигации откройте нужную точку в Яндекс Картах.</div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const HOTEL = [59.92255, 30.31535];
+    const modes = {
+      walk: {label:'пешком', icon:'↗', dash:null},
+      taxi: {label:'такси', icon:'◆', dash:'9 8'},
+      metro: {label:'метро', icon:'M', dash:'3 7'},
+      boat: {label:'метеор', icon:'≈', dash:'13 7'},
+      free: {label:'по ситуации', icon:'·', dash:'2 8'}
+    };
+    const days = [
+      {
+        id:'thu', tab:'Четверг', date:'24 сентября', color:'#2b6cb0', title:'Первое знакомство с городом',
+        note:'Исторический центр, Эрмитаж и Исаакиевская площадь. Маршрут рассчитан на дождливую погоду.',
+        metrics:['11 остановок','12–14 км','09:30–21:00'],
+        points:[
+          p('09:30','Садовая, 48','Завтрак возле хостела и начало прогулки.',HOTEL,null,'Санкт-Петербург, Садовая улица, 48'),
+          p('10:40','Казанский собор','Осмотр собора и площади.',[59.93430,30.32472],'walk','Казанская площадь, 2'),
+          p('11:10','Дом Зингера','Короткая остановка у знаменитого здания.',[59.93568,30.32567],'walk','Невский проспект, 28'),
+          p('11:25','Спас на Крови','Осмотр снаружи и прогулка вдоль канала.',[59.94012,30.32893],'walk','набережная канала Грибоедова, 2Б'),
+          p('11:50','Дворцовая площадь','Переход к Эрмитажу.',[59.93901,30.31574],'walk','Дворцовая площадь'),
+          p('12:10','Эрмитаж','Главный музейный комплекс, около 3 часов 20 минут.',[59.93983,30.31456],'walk','Дворцовая площадь, 2'),
+          p('15:45','Ресторан Teplo','Поздний обед. Столик лучше забронировать.',[59.93068,30.30578],'walk','Большая Морская улица, 45'),
+          p('17:00','Исаакиевский собор','Собор и колоннада при хорошей погоде.',[59.93412,30.30610],'walk','Исаакиевская площадь, 4'),
+          p('18:10','Медный всадник','Сенатская площадь и вид на Неву.',[59.93639,30.30221],'walk','Сенатская площадь'),
+          p('18:40','Адмиралтейство','Вечерняя прогулка по центру.',[59.93746,30.30838],'walk','Адмиралтейский проезд, 1'),
+          p('21:00','Садовая, 48','Легкий ужин и отдых.',HOTEL,'walk','Санкт-Петербург, Садовая улица, 48')
+        ]
+      },
+      {
+        id:'fri', tab:'Пятница', date:'25 сентября', color:'#c47822', title:'Петергоф и разводные мосты',
+        note:'Метеор, Нижний парк, Большой дворец и ночной Дворцовый мост.',
+        metrics:['13 остановок','10–13 км','08:30–02:00'],
+        points:[
+          p('08:30','Садовая, 48','Завтрак и подготовка к выезду.',HOTEL,null,'Санкт-Петербург, Садовая улица, 48'),
+          p('09:40','Дворцовая пристань','Посадка на метеор. Приехать заранее.',[59.94053,30.31887],'taxi','Дворцовая набережная'),
+          p('10:45','Причал Петергофа','Прибытие в Нижний парк.',[59.88743,29.91234],'boat','Причал Нижнего парка, Петергоф'),
+          p('11:00','Большой каскад','Фонтаны «Самсон» и центральная перспектива.',[59.88511,29.90942],'walk','Нижний парк, Петергоф'),
+          p('12:00','Западная часть парка','Аллеи, каскады и берег Финского залива.',[59.88620,29.89942],'walk','Нижний парк, западная часть'),
+          p('13:20','Обед в парке','Остановка на обед без выхода из Нижнего парка.',[59.88530,29.90564],'walk','Нижний парк, Петергоф'),
+          p('14:15','Большой Петергофский дворец','Осмотр дворца, около 1 часа 15 минут.',[59.88482,29.90895],'walk','Разводная улица, 2, Петергоф'),
+          p('15:40','Дворец Монплезир','Римские фонтаны и восточная часть парка.',[59.88672,29.92268],'walk','Нижний парк, Монплезир'),
+          p('17:00','Причал Петергофа','Посадка на обратный метеор в 17:15.',[59.88743,29.91234],'walk','Причал Нижнего парка, Петергоф'),
+          p('17:50','Дворцовая пристань','Возвращение в центр Петербурга.',[59.94053,30.31887],'boat','Дворцовая набережная'),
+          p('19:30','Садовая, 48','Ужин и отдых перед ночной прогулкой.',HOTEL,'taxi','Санкт-Петербург, Садовая улица, 48'),
+          p('00:45','Дворцовая набережная','Занять место для просмотра. Развод моста в 01:10.',[59.94142,30.31510],'taxi','Дворцовая набережная, у Эрмитажа'),
+          p('02:00','Садовая, 48','Возвращение и сон.',HOTEL,'taxi','Санкт-Петербург, Садовая улица, 48')
+        ]
+      },
+      {
+        id:'sat', tab:'Суббота', date:'26 сентября', color:'#247a72', title:'Дворец, Мариинка и Севкабель',
+        note:'Юсуповский дворец, опера Прокофьева и закат на берегу Финского залива.',
+        metrics:['9 остановок','9–12 км','09:15–22:00'],
+        points:[
+          p('09:15','Садовая, 48','Завтрак и начало дня.',HOTEL,null,'Санкт-Петербург, Садовая улица, 48'),
+          p('10:30','Юсуповский дворец','Парадные залы, жилые покои и домашний театр.',[59.92956,30.29874],'walk','улица Декабристов, 21'),
+          p('11:45','Львиный мостик','Короткая остановка у канала Грибоедова.',[59.92737,30.30133],'walk','Львиный мост'),
+          p('12:10','Новая Голландия','Прогулка по острову и набережной.',[59.92980,30.28910],'walk','набережная Адмиралтейского канала, 2'),
+          p('12:50','Кофейня «Хороший день»','Легкий обед перед театром.',[59.92163,30.29502],'walk','проспект Римского-Корсакова, 31'),
+          p('13:50','Никольский морской собор','Собор и Никольская площадь.',[59.92268,30.30064],'walk','Никольская площадь, 1'),
+          p('14:40','Мариинский театр','Прибытие заранее. Спектакль в 15:30, окончание около 17:40.',[59.92563,30.29637],'walk','Театральная площадь, 1'),
+          p('18:15','Севкабель Порт','Набережная, закат, ужин и стрит-арт.',[59.92277,30.24119],'taxi','Кожевенная линия, 40'),
+          p('22:00','Садовая, 48','Возвращение в хостел.',HOTEL,'taxi','Санкт-Петербург, Садовая улица, 48')
+        ]
+      },
+      {
+        id:'sun', tab:'Воскресенье', date:'27 сентября', color:'#bc4b51', title:'Церковь и день рождения',
+        note:'Богослужение, гибкий обед с друзьями, Петропавловская крепость и праздничный ужин.',
+        metrics:['9 остановок','7–10 км','08:45–22:00'],
+        points:[
+          p('08:45','Садовая, 48','Завтрак и поздравление супруги.',HOTEL,null,'Санкт-Петербург, Садовая улица, 48'),
+          p('10:00','Метро «Сенная площадь»','Посадка на синюю линию, без пересадок.',[59.92723,30.31867],'walk','Сенная площадь'),
+          p('10:30','Метро «Озерки»','Выход и пеший переход до церкви.',[60.03706,30.32153],'metro','Выборгское шоссе, метро Озерки'),
+          p('10:50','Церковь на Поклонной горе','Богослужение с 11:00 до 13:00.',[60.03572,30.30413],'walk','Большая Озерная улица, 27'),
+          p('13:15','Обед с друзьями','Место уточняется; точка поставлена в районе Озерков.',[60.03706,30.32153],'free','район метро Озерки'),
+          p('15:50','Метро «Горьковская»','Переход к Заячьему острову.',[59.95611,30.31878],'metro','Кронверкский проспект'),
+          p('16:00','Петропавловская крепость','Собор и прогулка по территории до 17:45.',[59.95010,30.31666],'walk','Петропавловская крепость'),
+          p('18:30','«Паруса на крыше»','Праздничный ужин, скидка имениннику и вид на закат.',[59.93164,30.35518],'taxi','улица Марата, 5'),
+          p('22:00','Садовая, 48','Возвращение и сбор вещей.',HOTEL,'taxi','Санкт-Петербург, Садовая улица, 48')
+        ]
+      }
+    ];
+
+    function p(time,name,desc,coords,mode,address){ return {time,name,desc,coords,mode,address}; }
+
+    if (!window.L) {
+      document.getElementById('map').innerHTML = '<div style="padding:30px;font:16px system-ui">Карта не загрузилась. Проверьте подключение к интернету — расписание слева продолжает работать.</div>';
+      throw new Error('Leaflet did not load');
+    }
+
+    const map = L.map('map', {zoomControl:false, preferCanvas:true}).setView([59.94,30.31], 12);
+    L.control.zoom({position:'bottomright'}).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom:19,
+      attribution:'© OpenStreetMap'
+    }).addTo(map);
+
+    let current = 0;
+    let routeLayer = L.layerGroup().addTo(map);
+    let markers = [];
+    let bounds = null;
+
+    const tabs = document.getElementById('dayTabs');
+    days.forEach((day,index)=>{
+      const btn = document.createElement('button');
+      btn.className='day-btn';
+      btn.type='button';
+      btn.role='tab';
+      btn.innerHTML=`<span class="dot" style="color:${day.color}"></span><span><b>${day.tab}</b><small>${day.date}</small></span>`;
+      btn.addEventListener('click',()=>renderDay(index));
+      tabs.appendChild(btn);
+    });
+
+    const legend = L.control({position:'topright'});
+    legend.onAdd = () => {
+      const el=L.DomUtil.create('div','legend');
+      el.innerHTML='<div class="legend-row"><span class="legend-line"></span>пешком</div><div class="legend-row"><span class="legend-line dash"></span>транспорт</div>';
+      return el;
+    };
+    legend.addTo(map);
+
+    function yandexUrl(point){
+      return `https://yandex.ru/maps/?pt=${point.coords[1]},${point.coords[0]}&z=16&l=map`;
+    }
+    function googleUrl(point){
+      return `https://www.google.com/maps/search/?api=1&query=${point.coords[0]},${point.coords[1]}`;
+    }
+    function icon(color,n){
+      return L.divIcon({
+        className:'number-icon', iconSize:[34,40], iconAnchor:[17,38], popupAnchor:[0,-37],
+        html:`<div class="map-pin" style="background:${color}"><span>${n}</span></div>`
+      });
+    }
+    function popup(day,point){
+      return `<div style="--active:${day.color}"><div class="pop-time">${point.time}${point.mode ? ' · '+modes[point.mode].label : ''}</div><div class="pop-title">${point.name}</div><div class="pop-address">${point.desc}<br><br>${point.address}</div><div class="pop-actions"><a href="${yandexUrl(point)}" target="_blank" rel="noopener">Яндекс Карты</a><a href="${googleUrl(point)}" target="_blank" rel="noopener">Google Maps</a></div></div>`;
+    }
+    function renderDay(index){
+      current=index;
+      const day=days[index];
+      document.documentElement.style.setProperty('--active',day.color);
+      [...tabs.children].forEach((el,i)=>{
+        el.setAttribute('aria-selected',String(i===index));
+        el.style.background=i===index ? day.color : '#fff';
+        if(i!==index) el.querySelector('.dot').style.color=days[i].color;
+      });
+      document.getElementById('summary').innerHTML=`
+        <div class="day-kicker"><span>${day.tab}</span><span>·</span><span>${day.date}</span></div>
+        <h2 class="day-title">${day.title}</h2>
+        <p class="day-note">${day.note}</p>
+        <div class="metrics">${day.metrics.map((m,i)=>`<div class="metric"><b>${m}</b><span>${['точки','пешком','время'][i]}</span></div>`).join('')}</div>`;
+      routeLayer.clearLayers(); markers=[];
+      const pts=day.points;
+      for(let i=1;i<pts.length;i++){
+        const mode=pts[i].mode || 'walk';
+        L.polyline([pts[i-1].coords,pts[i].coords],{
+          color:day.color, weight:4, opacity:.8, dashArray:modes[mode].dash, lineCap:'round'
+        }).addTo(routeLayer);
+      }
+      pts.forEach((pt,i)=>{
+        const marker=L.marker(pt.coords,{icon:icon(day.color,i+1),title:pt.name}).bindPopup(popup(day,pt));
+        marker.addTo(routeLayer); markers.push(marker);
+      });
+      bounds=L.latLngBounds(pts.map(x=>x.coords));
+      fitRoute();
+      const timeline=document.getElementById('timeline');
+      timeline.innerHTML=pts.map((pt,i)=>`
+        <li class="stop">
+          <div class="stop-marker">${i+1}</div>
+          <div class="stop-card" tabindex="0" data-index="${i}" role="button" aria-label="Показать ${pt.name} на карте">
+            <div class="stop-top"><span class="stop-time">${pt.time}</span><span class="mode">${pt.mode ? modes[pt.mode].icon+' '+modes[pt.mode].label : 'старт'}</span></div>
+            <div class="stop-name">${pt.name}</div><p class="stop-desc">${pt.desc}</p>
+          </div>
+        </li>`).join('');
+      timeline.querySelectorAll('.stop-card').forEach(card=>{
+        const open=()=>focusPoint(Number(card.dataset.index));
+        card.addEventListener('click',open);
+        card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
+      });
+      document.getElementById('panel').scrollTop=0;
+      setTimeout(()=>map.invalidateSize(),80);
+    }
+    function fitRoute(){
+      if(!bounds) return;
+      const mobile=window.matchMedia('(max-width:780px)').matches;
+      map.fitBounds(bounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,250]:[35,35],maxZoom:15});
+    }
+    function focusPoint(i){
+      const point=days[current].points[i];
+      const mobile=window.matchMedia('(max-width:780px)').matches;
+      map.setView(point.coords,mobile?15:16,{animate:true});
+      markers[i].openPopup();
+    }
+    document.getElementById('fitBtn').addEventListener('click',fitRoute);
+    document.getElementById('hotelBtn').addEventListener('click',()=>{
+      const i=days[current].points.findIndex(x=>x.coords[0]===HOTEL[0]&&x.coords[1]===HOTEL[1]);
+      focusPoint(i<0?0:i);
+    });
+    document.getElementById('shareBtn').addEventListener('click',async()=>{
+      const payload={title:'Петербург · маршруты на 4 дня',text:'Наш маршрут по Санкт-Петербургу на 24–27 сентября 2026',url:location.href};
+      try{ if(navigator.share){await navigator.share(payload);} else {await navigator.clipboard.writeText(location.href); alert('Ссылка скопирована');} }catch(e){}
+    });
+    window.addEventListener('resize',()=>{map.invalidateSize();});
+    renderDay(0);
+  </script>
+</body>
+</html>

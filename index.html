@@ -194,6 +194,59 @@
       box-shadow: var(--shadow);
     }
     .sheet-handle { display: none; }
+
+    .food-view[hidden] { display: none !important; }
+    .food-view { padding-bottom: 8px; }
+    .food-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+    .food-controls label { grid-column: 1 / -1; color: var(--muted); font-size: .76rem; font-weight: 700; }
+    .food-controls select, .food-search {
+      width: 100%; min-height: 40px; border: 1px solid var(--line); border-radius: 9px;
+      padding: 7px 9px; background: white; color: var(--ink); font: inherit; font-size: .82rem;
+    }
+    .food-search { grid-column: 1 / -1; }
+    .food-filter {
+      min-height: 38px; border: 1px solid var(--line); background: white; border-radius: 9px;
+      padding: 6px 8px; cursor: pointer; font-size: .78rem; font-weight: 750;
+    }
+    .food-filter[aria-pressed="true"] { color: white; background: var(--active); border-color: var(--active); }
+    .food-note { margin: 8px 0 12px; color: var(--muted); font-size: .76rem; line-height: 1.4; }
+    .food-directory { display: inline-block; margin: 0 0 12px; color: var(--navy); font-size: .78rem; font-weight: 800; }
+    .food-count { margin: 0 0 10px; color: var(--muted); font-size: .78rem; }
+    .food-list { display: grid; gap: 9px; }
+    .food-card { border: 1px solid var(--line); border-radius: 12px; background: white; padding: 11px; }
+    .food-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+    .food-card h3 { margin: 0; font-size: .94rem; line-height: 1.2; }
+    .food-area { margin: 4px 0 0; color: var(--muted); font-size: .72rem; }
+    .food-badge { flex: 0 0 auto; border-radius: 999px; padding: 5px 7px; color: white; background: #71818b; font-size: .7rem; font-weight: 850; white-space: nowrap; }
+    .food-badge.sale { background: #bd5c2a; }
+    .food-badge.birthday { box-shadow: 0 0 0 2px #f4d6b3; }
+    .food-check { margin: 9px 0 4px; font-size: .84rem; font-weight: 850; }
+    .food-cuisine, .food-offer { margin: 4px 0; font-size: .77rem; line-height: 1.38; }
+    .food-cuisine { color: var(--muted); }
+    .food-offer { color: #354b5a; }
+    .food-offer b { color: #9b4d23; }
+    .food-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    .food-actions a, .food-actions button {
+      display: inline-flex; align-items: center; min-height: 32px; border: 1px solid var(--line);
+      border-radius: 8px; padding: 5px 8px; color: var(--navy); background: #f8fafb;
+      text-decoration: none; font-size: .72rem; font-weight: 750; cursor: pointer;
+    }
+    .food-actions a:hover, .food-actions button:hover { border-color: var(--active); }
+    .food-map-icon { background: transparent; border: 0; }
+    .food-chip {
+      display: flex; align-items: center; gap: 5px; width: max-content; min-height: 27px;
+      border: 2px solid white; border-radius: 18px; padding: 3px 7px;
+      color: white; background: #647985; box-shadow: 0 3px 10px rgba(23,40,53,.34);
+      font: 800 11px/1 system-ui, sans-serif; white-space: nowrap;
+    }
+    .food-chip.sale { background: #bd5c2a; }
+    .food-chip span { font-size: 13px; }
+    @media (max-width: 780px) {
+      .food-controls { grid-template-columns: 1fr 1fr; gap: 7px; }
+      .food-card { padding: 10px; }
+      .food-actions a, .food-actions button { min-height: 34px; }
+    }
+
     @media (max-width: 780px) {
       body { overflow: hidden; }
       header { min-height: 62px; padding: 11px 14px; }
@@ -248,6 +301,25 @@
           <button class="tool-btn" id="hotelBtn">Вернуться к отелю</button>
         </div>
         <ol class="timeline" id="timeline"></ol>
+        <section class="food-view" id="foodView" hidden aria-label="Каталог мест, где поесть">
+          <div class="food-controls">
+            <label for="foodDay">Район и день маршрута</label>
+            <select id="foodDay" aria-label="Фильтр заведений по дню">
+              <option value="all">Все четыре дня</option>
+              <option value="thu">Четверг · центр</option>
+              <option value="fri">Пятница · Петергоф</option>
+              <option value="sat">Суббота · театр и Севкабель</option>
+              <option value="sun">Воскресенье · Озерки и день рождения</option>
+            </select>
+            <input class="food-search" id="foodSearch" type="search" placeholder="Найти заведение или кухню…" aria-label="Поиск заведений">
+            <button class="food-filter" id="saleFilter" type="button" aria-pressed="false">Только со скидкой</button>
+            <button class="food-filter" id="birthdayFilter" type="button" aria-pressed="false">🎂 Предложения ко дню рождения</button>
+          </div>
+          <a class="food-directory" href="https://sevcableport.ru/residents/eda/" target="_blank" rel="noopener">Полный список еды в Севкабель Порту ↗</a>
+          <p class="food-note">Подборка проверена 23 сентября 2026. Средний чек — ориентир на человека; у сетов указана цена меню. Скидки могут требовать билет, приложение или подтверждение даты рождения — откройте «Условия» и уточните перед заказом. Точки на карте приблизительные; Яндекс Карты ведут к точному адресу.</p>
+          <p class="food-count" id="foodCount" aria-live="polite"></p>
+          <div class="food-list" id="foodList"></div>
+        </section>
       </aside>
       <div id="map" role="application" aria-label="Интерактивная карта маршрута"></div>
       <div class="notice">Линии показывают порядок остановок. Для точной навигации откройте нужную точку в Яндекс Картах.</div>
@@ -338,6 +410,7 @@
     ];
 
     function p(time,name,desc,coords,mode,address){ return {time,name,desc,coords,mode,address}; }
+    const foodPlaces = [{"name":"Teplo","cuisine":"Европейская, русская","address":"Большая Морская улица, 45","coords":[59.93068,30.30578],"days":["thu"],"avg":"≈1 600 ₽","discount":true,"birthday":false,"badge":"−40% вино","offer":"По четвергам с 12:00 до 15:00 скидка 40% на белое вино. В вашем плане обед после Эрмитажа в 15:45 — акция к этому времени уже заканчивается.","menu":"https://teplo.family/mainmenu","source":"https://www.restoclub.ru/spb/place/teplo"},{"name":"Mekong","cuisine":"Паназиатская","address":"Садовая улица, 42","coords":[59.92286,30.31573],"days":["thu","fri"],"avg":"≈2 100 ₽","discount":true,"birthday":false,"badge":"−20%","offer":"В будни с 12:00 до 16:00 — скидка 20% на меню кухни (клубный обед).","menu":"https://mekongspb.ru/","source":"https://mekongspb.ru/"},{"name":"Ganesha","cuisine":"Индийская","address":"Садовая улица, 42","coords":[59.92302,30.31541],"days":["thu","fri"],"avg":"≈2 100 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Подтверждённую скидку на ваши даты не нашёл.","menu":"https://ganesharest.ru/","source":""},{"name":"Сулико","cuisine":"Грузинская","address":"Казанская улица, 6","coords":[59.93438,30.32163],"days":["thu"],"avg":"≈1 500 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Подтверждённую скидку на ваши даты не нашёл.","menu":"https://sulikospb.ru/kazanskaya-6/","source":""},{"name":"Симург","cuisine":"Восточная, европейская","address":"Казанская улица, 8–10","coords":[59.93411,30.32194],"days":["thu"],"avg":"≈1 800 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Подтверждённую скидку на ваши даты не нашёл.","menu":"https://www.restoclub.ru/spb/place/simurg","source":""},{"name":"Пышечная","cuisine":"Пышки, кофе","address":"Большая Конюшенная улица, 25","coords":[59.93768,30.32372],"days":["thu"],"avg":"≈300 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Быстрый недорогой перекус; подтверждённую скидку не нашёл.","menu":"https://www.pyshka.ru/","source":""},{"name":"Столовая №1","cuisine":"Домашняя кухня","address":"Невский проспект, 25","coords":[59.93454,30.32782],"days":["thu"],"avg":"≈300–500 ₽ за приём пищи","discount":false,"birthday":false,"badge":"₽","offer":"Экономный вариант рядом с Невским; цены уточняйте на витрине.","menu":"https://yandex.ru/maps/?text=%D0%A1%D1%82%D0%BE%D0%BB%D0%BE%D0%B2%D0%B0%D1%8F%20%E2%84%961%20%D0%9D%D0%B5%D0%B2%D1%81%D0%BA%D0%B8%D0%B9%20%D0%BF%D1%80%D0%BE%D1%81%D0%BF%D0%B5%D0%BA%D1%82%2025%20%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3%20%D0%BC%D0%B5%D0%BD%D1%8E","source":""},{"name":"Bistrot 44","cuisine":"Европейская, авторская","address":"улица Восстания, 44","coords":[59.93906,30.35939],"days":["sun"],"avg":"≈1 600 ₽ без напитков","discount":true,"birthday":true,"badge":"−10% имениннику","offer":"Имениннику −10% на основное меню в день рождения и 7 дней после, плюс сладкий комплимент от шефа. На 27 сентября предложение подходит.","menu":"https://www.restoclub.ru/spb/place/bistro-44/menu","source":"https://www.restoclub.ru/spb/place/bistro-44"},{"name":"Ресторан «Штандарт»","cuisine":"Русская, европейская","address":"Нижний парк, Петергоф","coords":[59.88608,29.91296],"days":["fri"],"avg":"Сет-обед 2 450 / 2 950 / 3 450 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Фиксированное туристическое меню: салат, суп, горячее и десерт. Это цена сета, а не обычный средний чек.","menu":"https://www.shtandart-spb.ru/","source":"https://www.shtandart-spb.ru/"},{"name":"Бистро «Петровский шлюп»","cuisine":"Русская, домашняя","address":"Нижний парк, Петергоф","coords":[59.88558,29.9063],"days":["fri"],"avg":"Сет-обед 1 350 / 1 550 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Фиксированное туристическое меню из салата, супа и горячего — более спокойный по цене вариант в парке.","menu":"https://www.shtandart-spb.ru/","source":"https://www.shtandart-spb.ru/"},{"name":"Паркфуд","cuisine":"Быстрый перекус","address":"Нижний парк, Петергоф","coords":[59.88702,29.91157],"days":["fri"],"avg":"≈500 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Киоск/быстрый перекус в Нижнем парке; меню зависит от точки.","menu":"https://yandex.ru/maps/?text=%D0%9F%D0%B0%D1%80%D0%BA%D1%84%D1%83%D0%B4%20%D0%9D%D0%B8%D0%B6%D0%BD%D0%B8%D0%B9%20%D0%BF%D0%B0%D1%80%D0%BA%20%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B3%D0%BE%D1%84%20%D0%BC%D0%B5%D0%BD%D1%8E","source":""},{"name":"Хороший день","cuisine":"Европейская, десерты, кофе","address":"проспект Римского-Корсакова, 31","coords":[59.92163,30.29502],"days":["sat"],"avg":"≈1 000 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Удобный лёгкий обед рядом с Мариинским театром; подтверждённую скидку не нашёл.","menu":"https://www.restoclub.ru/spb/place/horoshij-den/menu","source":""},{"name":"Кофейня Барного Типа (КБТ)","cuisine":"Кофейня, завтраки, обеды","address":"улица Декабристов, 29А","coords":[59.92382,30.29912],"days":["sat","sun"],"avg":"≈700 ₽ по меню","discount":true,"birthday":true,"badge":"−10%","offer":"10% скидка по билету из Мариинского театра. В день рождения — −10% и десерт в подарок; условия на дату рождения лучше уточнить у кофейни.","menu":"https://kbt.spb.ru/menu","source":"https://kbt.spb.ru/"},{"name":"Линдфорс","cuisine":"Пироги, выпечка, русская кухня","address":"улица Декабристов, 19","coords":[59.92531,30.30008],"days":["sat"],"avg":"≈1 700 ₽","discount":true,"birthday":false,"badge":"−30%","offer":"Вечером −30% на кухню, пироги и выпечку через приложение «Всем Еда». Скидка применяется к позициям без других акций.","menu":"https://vsemeda.com/spb/restaurants/823-lindfors","source":"https://vsemeda.com/spb/restaurants/823-lindfors"},{"name":"Teatro","cuisine":"Итальянская, европейская","address":"Театральная площадь, 2","coords":[59.92628,30.29561],"days":["sat"],"avg":"≈1 500 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Ресторан рядом с Мариинским театром; подтверждённую скидку на ваши даты не нашёл.","menu":"https://www.restoclub.ru/spb/place/teatro","source":""},{"name":"AVA Bistro · Новая Голландия","cuisine":"Средиземноморская, европейская","address":"набережная Адмиралтейского канала, 2И","coords":[59.9298,30.2891],"days":["sat"],"avg":"≈3 000 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Более дорогой вариант на острове; опубликованный средний чек около 3 000 ₽.","menu":"https://pinskiy.co/restaurant/ava-bistro-new-holland","source":""},{"name":"Балкан","cuisine":"Сербская, греческая, балканская","address":"Кожевенная линия, 40","coords":[59.92277,30.24119],"days":["sat","sun"],"avg":"≈1 500 ₽","discount":true,"birthday":true,"badge":"−15% имениннику","offer":"Именинникам −15% на всё меню за 3 дня до дня рождения и 3 дня после, плюс торт. Подходит для 26 и 27 сентября.","menu":"https://www.balkanresto.ru/","source":"https://sevcableport.ru/resident/balkan/"},{"name":"Petra","cuisine":"Греческая","address":"Кожевенная линия, 40А","coords":[59.92298,30.24086],"days":["sat"],"avg":"≈1 300 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Греческое бистро в Севкабеле; подтверждённой скидки на субботу не нашёл.","menu":"https://sevcableport.ru/resident/petra/","source":""},{"name":"Мама домой загонит","cuisine":"Домашняя, русская","address":"Кожевенная линия, 40А","coords":[59.92312,30.24156],"days":["sat"],"avg":"≈1 300 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Кафе в Севкабеле; подтверждённую скидку на ваши даты не нашёл.","menu":"https://sevcableport.ru/resident/mama-domoj-zagonit/","source":""},{"name":"Карелла","cuisine":"Карельская, северная","address":"Кожевенная линия, 40","coords":[59.92338,30.24171],"days":["sat"],"avg":"≈1 700 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Локальные продукты и северная кухня; подтверждённую скидку не нашёл.","menu":"https://sevcableport.ru/resident/karella/","source":""},{"name":"Pio al Porto","cuisine":"Итальянская, пицца","address":"Кожевенная линия, 40Д","coords":[59.92251,30.24213],"days":["sat"],"avg":"≈1 500 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Двухэтажный ресторан с итальянской кухней у набережной; подтверждённую скидку не нашёл.","menu":"https://pioalporto.ru/","source":""},{"name":"Бюро","cuisine":"Бургеры, бар","address":"Кожевенная линия, 40","coords":[59.92342,30.24092],"days":["sat"],"avg":"≈1 500 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Бургер-бар в Севкабель Порту; подтверждённую скидку не нашёл.","menu":"https://www.restoclub.ru/spb/place/bjuro-14","source":""},{"name":"Leila","cuisine":"Израильская, турецкая, грузинская, армянская","address":"Кожевенная линия, 40","coords":[59.92222,30.2407],"days":["sat"],"avg":"≈1 500 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Кафе-бар с панорамными окнами на залив; подтверждённую скидку на ваши даты не нашёл.","menu":"https://sevcableport.ru/resident/leila/","source":""},{"name":"VЛАVАШЕ","cuisine":"Шаверма, стритфуд","address":"Кожевенная линия, 40Д","coords":[59.92218,30.24162],"days":["sat"],"avg":"≈530 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Самый быстрый и недорогой вариант в фудкорте; цены и состав смотрите в меню по ссылке.","menu":"https://2gis.ru/spb/firm/70000001080035127/tab/prices","source":""},{"name":"Мидийные личности","cuisine":"Морепродукты, мидии","address":"Кожевенная линия, 40","coords":[59.92363,30.24127],"days":["sat"],"avg":"≈1 800 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Морская кухня на Барной линии; подтверждённую скидку не нашёл.","menu":"https://www.restoclub.ru/spb/place/midiinye-lichnosti","source":""},{"name":"Марчеллис · Озерки","cuisine":"Итальянская, европейская","address":"проспект Энгельса, 124","coords":[60.03682,30.3221],"days":["sun"],"avg":"≈1 500–2 000 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Удобно для обеда после церкви; находится у метро «Озерки», в ТК «Вояж».","menu":"https://www.marcellis.ru/restaurants/engelsa_124/","source":""},{"name":"Mama Roma · Озерки","cuisine":"Итальянская, пицца","address":"проспект Энгельса, 124","coords":[60.03695,30.32242],"days":["sun"],"avg":"≈1 000 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Итальянская альтернатива в ТК «Вояж»; подтверждённой скидки в воскресенье не нашёл.","menu":"https://www.restoclub.ru/spb/place/mama-roma-7","source":""},{"name":"Соседи · Озерки","cuisine":"Европейская, десерты","address":"проспект Энгельса, 124","coords":[60.03712,30.32268],"days":["sun"],"avg":"≈1 300 ₽","discount":false,"birthday":false,"badge":"₽","offer":"Ещё один вариант в районе ТК «Вояж» после богослужения.","menu":"https://yandex.ru/maps/?text=%D0%A1%D0%BE%D1%81%D0%B5%D0%B4%D0%B8%20%D1%80%D0%B5%D1%81%D1%82%D0%BE%D1%80%D0%B0%D0%BD%20%D0%A1%D0%B0%D0%BD%D0%BA%D1%82-%D0%9F%D0%B5%D1%82%D0%B5%D1%80%D0%B1%D1%83%D1%80%D0%B3%20%D0%BF%D1%80%D0%BE%D1%81%D0%BF%D0%B5%D0%BA%D1%82%20%D0%AD%D0%BD%D0%B3%D0%B5%D0%BB%D1%8C%D1%81%D0%B0%20124","source":""},{"name":"Паруса на крыше","cuisine":"Европейская, русская","address":"улица Марата, 5 · 6 этаж","coords":[59.93164,30.35518],"days":["sun"],"avg":"≈1 700–2 300 ₽","discount":true,"birthday":true,"badge":"−20% имениннику","offer":"За 7 дней до дня рождения и 7 дней после — скидка 20% на весь счёт; также заявлены кусочек торта и персональное поздравление. Ваш ужин 27 сентября попадает в период акции.","menu":"https://nakryshe.parusa-spb.ru/menu","source":"https://nakryshe.parusa-spb.ru/novost1026-otmet-svoj-den-rozhdeniya-v-restorane-parusa-na-kryshe"}];
 
     if (!window.L) {
       document.getElementById('map').innerHTML = '<div style="padding:30px;font:16px system-ui">Карта не загрузилась. Проверьте подключение к интернету — расписание слева продолжает работать.</div>';
@@ -352,11 +425,23 @@
     }).addTo(map);
 
     let current = 0;
+    let activeView = 'route';
+    let foodFilter = 'all';
+    let visibleFood = [];
+    let foodMarkers = [];
+    let foodBounds = null;
     let routeLayer = L.layerGroup().addTo(map);
+    let foodLayer = L.layerGroup().addTo(map);
     let markers = [];
     let bounds = null;
 
     const tabs = document.getElementById('dayTabs');
+    const foodTab = document.createElement('button');
+    foodTab.className = 'day-btn';
+    foodTab.type = 'button';
+    foodTab.role = 'tab';
+    foodTab.setAttribute('aria-label','Открыть каталог мест, где поесть');
+    foodTab.textContent = '🍴 Где поесть';
     days.forEach((day,index)=>{
       const btn = document.createElement('button');
       btn.className='day-btn';
@@ -366,6 +451,7 @@
       btn.addEventListener('click',()=>renderDay(index));
       tabs.appendChild(btn);
     });
+    tabs.appendChild(foodTab);
 
     const legend = L.control({position:'topright'});
     legend.onAdd = () => {
@@ -374,6 +460,13 @@
       return el;
     };
     legend.addTo(map);
+    function updateLegend(foodMode){
+      const el = map.getContainer().querySelector('.legend');
+      if(!el) return;
+      el.innerHTML = foodMode
+        ? '<div class="legend-row"><span class="food-badge sale">−%</span>скидка</div><div class="legend-row">Нажмите точку: чек и меню</div>'
+        : '<div class="legend-row"><span class="legend-line"></span>пешком</div><div class="legend-row"><span class="legend-line dash"></span>транспорт</div>';
+    }
 
     function yandexUrl(point){
       return `https://yandex.ru/maps/?pt=${point.coords[1]},${point.coords[0]}&z=16&l=map`;
@@ -391,20 +484,29 @@
       return `<div style="--active:${day.color}"><div class="pop-time">${point.time}${point.mode ? ' · '+modes[point.mode].label : ''}</div><div class="pop-title">${point.name}</div><div class="pop-address">${point.desc}<br><br>${point.address}</div><div class="pop-actions"><a href="${yandexUrl(point)}" target="_blank" rel="noopener">Яндекс Карты</a><a href="${googleUrl(point)}" target="_blank" rel="noopener">Google Maps</a></div></div>`;
     }
     function renderDay(index){
+      activeView='route';
       current=index;
+      document.getElementById('foodView').hidden=true;
+      document.getElementById('timeline').hidden=false;
+      document.getElementById('fitBtn').textContent='Показать весь маршрут';
+      document.getElementById('hotelBtn').textContent='Вернуться к отелю';
+      document.querySelector('.notice').textContent='Линии показывают порядок остановок. Для точной навигации откройте нужную точку в Яндекс Картах.';
       const day=days[index];
       document.documentElement.style.setProperty('--active',day.color);
       [...tabs.children].forEach((el,i)=>{
-        el.setAttribute('aria-selected',String(i===index));
-        el.style.background=i===index ? day.color : '#fff';
-        if(i!==index) el.querySelector('.dot').style.color=days[i].color;
+        const selected=i===index;
+        el.setAttribute('aria-selected',String(selected));
+        el.style.background=selected ? day.color : '#fff';
+        el.style.color=selected ? '#fff' : '';
+        const dot=el.querySelector('.dot');
+        if(dot && i<days.length) dot.style.color=days[i].color;
       });
       document.getElementById('summary').innerHTML=`
         <div class="day-kicker"><span>${day.tab}</span><span>·</span><span>${day.date}</span></div>
         <h2 class="day-title">${day.title}</h2>
         <p class="day-note">${day.note}</p>
         <div class="metrics">${day.metrics.map((m,i)=>`<div class="metric"><b>${m}</b><span>${['точки','пешком','время'][i]}</span></div>`).join('')}</div>`;
-      routeLayer.clearLayers(); markers=[];
+      foodLayer.clearLayers(); routeLayer.clearLayers(); markers=[]; foodMarkers=[];
       const pts=day.points;
       for(let i=1;i<pts.length;i++){
         const mode=pts[i].mode || 'walk';
@@ -433,9 +535,121 @@
         card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
       });
       document.getElementById('panel').scrollTop=0;
+      updateLegend(false);
       setTimeout(()=>map.invalidateSize(),80);
     }
+
+    function escapeHtml(value){
+      return String(value).replace(/[&<>"']/g,function(ch){
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+      });
+    }
+    function foodYandexUrl(food){
+      return 'https://yandex.ru/maps/?text='+encodeURIComponent(food.name+', '+food.address+', Санкт-Петербург');
+    }
+    function foodIcon(food){
+      const label=food.discount ? food.badge : '₽';
+      const sale=food.discount ? ' sale' : '';
+      return L.divIcon({
+        className:'food-map-icon',iconSize:[88,34],iconAnchor:[44,17],popupAnchor:[0,-17],
+        html:'<div class="food-chip'+sale+'" title="'+escapeHtml(food.name)+'"><span>🍴</span><b>'+escapeHtml(label)+'</b></div>'
+      });
+    }
+    function foodPopup(food){
+      const offer=food.offer || 'Подтверждённую скидку на ваши даты не нашёл.';
+      const menu=food.menu || foodYandexUrl(food);
+      const source=food.source ? '<a href="'+food.source+'" target="_blank" rel="noopener">Условия</a>' : '';
+      return '<div><div class="pop-title">'+escapeHtml(food.name)+'</div>'+
+        '<div class="pop-address">'+escapeHtml(food.address)+'<br>'+escapeHtml(food.cuisine)+'</div>'+
+        '<p><b>Средний чек:</b> '+escapeHtml(food.avg)+'</p>'+
+        '<p><b>Предложение:</b> '+escapeHtml(offer)+'</p>'+
+        '<div class="pop-actions"><a href="'+menu+'" target="_blank" rel="noopener">Меню / сайт</a>'+
+        '<a href="'+foodYandexUrl(food)+'" target="_blank" rel="noopener">Яндекс Карты</a>'+source+'</div></div>';
+    }
+    function foodDayLabel(food){
+      const labels={thu:'Чт · центр',fri:'Пт · Петергоф',sat:'Сб · театр / Севкабель',sun:'Вс · Озерки / день рождения'};
+      return food.days.map(function(id){return labels[id];}).join(' · ');
+    }
+    function fitFood(){
+      if(!foodBounds) return;
+      const mobile=window.matchMedia('(max-width:780px)').matches;
+      map.fitBounds(foodBounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,250]:[35,35],maxZoom:14});
+    }
+    function focusFood(i){
+      const food=visibleFood[i];
+      if(!food || !foodMarkers[i]) return;
+      const mobile=window.matchMedia('(max-width:780px)').matches;
+      map.setView(food.coords,mobile?16:16,{animate:true});
+      foodMarkers[i].openPopup();
+    }
+    function renderFood(){
+      activeView='food';
+      routeLayer.clearLayers();
+      foodLayer.clearLayers();
+      foodMarkers=[];
+      const selectedDay=document.getElementById('foodDay').value;
+      const term=document.getElementById('foodSearch').value.trim().toLocaleLowerCase('ru');
+      visibleFood=foodPlaces.filter(function(food){
+        const inDay=selectedDay==='all' || food.days.indexOf(selectedDay)!==-1;
+        const inFilter=foodFilter==='all' || (foodFilter==='sale' && food.discount) || (foodFilter==='birthday' && food.birthday);
+        const haystack=(food.name+' '+food.cuisine+' '+food.address+' '+food.offer).toLocaleLowerCase('ru');
+        return inDay && inFilter && (!term || haystack.indexOf(term)!==-1);
+      });
+      document.getElementById('summary').innerHTML=
+        '<div class="day-kicker"><span>Еда и кафе</span><span>·</span><span>4 дня</span></div>'+
+        '<h2 class="day-title">Где поесть по маршруту</h2>'+
+        '<p class="day-note">Широкая подборка рядом с вашими остановками — от быстрых перекусов до ресторанов. Выберите день, чтобы приблизить карту к нужному району.</p>'+
+        '<div class="metrics"><div class="metric"><b>'+foodPlaces.length+'</b><span>мест в подборке</span></div>'+
+        '<div class="metric"><b>'+foodPlaces.filter(function(x){return x.discount;}).length+'</b><span>акции проверены</span></div>'+
+        '<div class="metric"><b>4 дня</b><span>районы маршрута</span></div></div>';
+      document.getElementById('timeline').hidden=true;
+      document.getElementById('foodView').hidden=false;
+      document.getElementById('fitBtn').textContent='Показать точки';
+      document.getElementById('hotelBtn').textContent='Вернуться к маршруту';
+      document.querySelector('.notice').textContent='Нажмите маркер: средний чек, предложение и ссылки на меню и Яндекс Карты.';
+      [...tabs.children].forEach(function(el){
+        el.setAttribute('aria-selected','false');
+        el.style.background='#fff';
+        el.style.color='';
+      });
+      foodTab.setAttribute('aria-selected','true');
+      foodTab.style.background='#bd5c2a';
+      foodTab.style.color='#fff';
+      document.getElementById('saleFilter').setAttribute('aria-pressed',String(foodFilter==='sale'));
+      document.getElementById('birthdayFilter').setAttribute('aria-pressed',String(foodFilter==='birthday'));
+      const foodList=document.getElementById('foodList');
+      document.getElementById('foodCount').textContent=visibleFood.length
+        ? 'Показано '+visibleFood.length+' из '+foodPlaces.length+' заведений. На пине — скидка; нажмите точку, чтобы увидеть чек.'
+        : 'По этому фильтру заведений не нашлось — измените день, фильтр или запрос.';
+      foodList.innerHTML=visibleFood.map(function(food,i){
+        const badge=food.discount ? '<span class="food-badge sale'+(food.birthday?' birthday':'')+'">'+escapeHtml(food.badge)+'</span>' : '<span class="food-badge">без акции</span>';
+        const source=food.source ? '<a href="'+food.source+'" target="_blank" rel="noopener">Условия</a>' : '';
+        const menu=food.menu || foodYandexUrl(food);
+        return '<article class="food-card">'+
+          '<div class="food-card-top"><div><h3>'+escapeHtml(food.name)+'</h3><p class="food-area">'+escapeHtml(foodDayLabel(food))+' · '+escapeHtml(food.address)+'</p></div>'+badge+'</div>'+
+          '<p class="food-check">Средний чек: '+escapeHtml(food.avg)+'</p>'+
+          '<p class="food-cuisine">'+escapeHtml(food.cuisine)+'</p>'+
+          '<p class="food-offer"><b>'+(food.discount?'Предложение:':'По скидкам:')+'</b> '+escapeHtml(food.offer)+'</p>'+
+          '<div class="food-actions"><a href="'+menu+'" target="_blank" rel="noopener">Меню / сайт</a>'+
+          '<a href="'+foodYandexUrl(food)+'" target="_blank" rel="noopener">Яндекс Карты</a>'+
+          '<button type="button" data-food-index="'+i+'">На карте</button>'+source+'</div></article>';
+      }).join('');
+      foodList.querySelectorAll('[data-food-index]').forEach(function(button){
+        button.addEventListener('click',function(){focusFood(Number(button.dataset.foodIndex));});
+      });
+      visibleFood.forEach(function(food){
+        const marker=L.marker(food.coords,{icon:foodIcon(food),title:food.name,alt:food.name}).bindPopup(foodPopup(food));
+        marker.addTo(foodLayer);
+        foodMarkers.push(marker);
+      });
+      foodBounds=visibleFood.length ? L.latLngBounds(visibleFood.map(function(food){return food.coords;})) : null;
+      updateLegend(true);
+      if(foodBounds) fitFood();
+      setTimeout(function(){map.invalidateSize();},80);
+    }
+
     function fitRoute(){
+      if(activeView==='food'){fitFood();return;}
       if(!bounds) return;
       const mobile=window.matchMedia('(max-width:780px)').matches;
       map.fitBounds(bounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,250]:[35,35],maxZoom:15});
@@ -446,8 +660,26 @@
       map.setView(point.coords,mobile?15:16,{animate:true});
       markers[i].openPopup();
     }
+
+    foodTab.addEventListener('click',function(){
+      document.getElementById('foodDay').value='all';
+      document.getElementById('foodSearch').value='';
+      foodFilter='all';
+      renderFood();
+    });
+    document.getElementById('foodDay').addEventListener('change',renderFood);
+    document.getElementById('foodSearch').addEventListener('input',renderFood);
+    document.getElementById('saleFilter').addEventListener('click',function(){
+      foodFilter=foodFilter==='sale'?'all':'sale';
+      renderFood();
+    });
+    document.getElementById('birthdayFilter').addEventListener('click',function(){
+      foodFilter=foodFilter==='birthday'?'all':'birthday';
+      renderFood();
+    });
     document.getElementById('fitBtn').addEventListener('click',fitRoute);
     document.getElementById('hotelBtn').addEventListener('click',()=>{
+      if(activeView==='food'){renderDay(current);return;}
       const i=days[current].points.findIndex(x=>x.coords[0]===HOTEL[0]&&x.coords[1]===HOTEL[1]);
       focusPoint(i<0?0:i);
     });

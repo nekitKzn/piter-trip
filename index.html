@@ -166,7 +166,7 @@
     .pop-time { color: var(--active); font-size: .78rem; font-weight: 850; }
     .pop-title { margin: 4px 0 5px; font-weight: 850; font-size: 1rem; }
     .pop-address { color: var(--muted); font-size: .78rem; line-height: 1.35; }
-    .pop-actions { display: flex; gap: 7px; margin-top: 11px; }
+    .pop-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
     .pop-actions a, .pop-actions button { border: 0; text-decoration: none; background: var(--navy); color: white; border-radius: 9px; padding: 8px 10px; cursor: pointer; font-size: .76rem; font-weight: 750; }
     .number-icon { background: transparent; border: 0; }
     .map-pin {
@@ -175,6 +175,18 @@
       color: white; border: 3px solid white; box-shadow: 0 3px 12px rgba(23,40,53,.32);
     }
     .map-pin span { transform: rotate(45deg); font-size: .76rem; font-weight: 900; }
+    .museum-map-icon { background: transparent; border: 0; }
+    .museum-pin {
+      display: grid; place-items: center; width: 38px; height: 38px;
+      border: 3px solid white; border-radius: 50%; background: #684a90;
+      color: white; font-size: 20px; box-shadow: 0 3px 12px rgba(23,40,53,.32);
+    }
+    .museum-control button {
+      border: 1px solid var(--line); border-radius: 10px; background: white;
+      color: #513875; padding: 9px 12px; min-height: 40px;
+      font-size: .81rem; font-weight: 850; cursor: pointer; box-shadow: var(--shadow);
+    }
+    .museum-control button:focus-visible { outline: 2px solid #684a90; outline-offset: 2px; }
     .legend {
       background: rgba(255,255,255,.95);
       border: 1px solid var(--line);
@@ -438,6 +450,26 @@
       throw new Error('Leaflet did not load');
     }
 
+    const museums = [
+      {
+        name:'Музей железных дорог России', icon:'🚂', coords:[59.90561,30.29778],
+        address:'Библиотечный переулок, 4, корпус 2',
+        hours:'Чт–пн 10:00–18:00; последний вход в 17:00.',
+        price:'Будни: 500 ₽ обычный / 650 ₽ с залами № 5 и 6; выходные: 600 ₽ / 750 ₽.',
+        detail:'Самостоятельный вариант посещения. В расписание не включён.',
+        site:'https://rzd-museum.ru/visiting'
+      },
+      {
+        name:'Гранд Макет Россия', icon:'🏘️', coords:[59.88799,30.33035],
+        address:'Цветочная улица, 16Л',
+        hours:'Ежедневно 10:00–20:00; кассы до 19:15.',
+        price:'980 ₽ взрослый билет. Супруге 735 ₽ со скидкой 25% с 24 по 27 сентября.',
+        detail:'Скидка имениннице действует за 3 дня до дня рождения и 3 дня после: нужен документ с фотографией и датой рождения. В расписание не включён.',
+        site:'https://grandmaket.com/for-visitors/',
+        terms:'https://grandmaket.com/skidka-dlya-imeninnika/'
+      }
+    ];
+
     const map = L.map('map', {zoomControl:false, preferCanvas:true}).setView([59.94,30.31], 12);
     L.control.zoom({position:'bottomright'}).addTo(map);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -453,6 +485,28 @@
     let foodBounds = null;
     let routeLayer = L.layerGroup().addTo(map);
     let foodLayer = L.layerGroup().addTo(map);
+    const museumLayer = L.layerGroup().addTo(map);
+    museums.forEach(function(museum){
+      const marker = L.marker(museum.coords,{
+        icon:L.divIcon({
+          className:'museum-map-icon', iconSize:[38,38], iconAnchor:[19,19], popupAnchor:[0,-20],
+          html:'<span class="museum-pin" aria-hidden="true">'+museum.icon+'</span>'
+        }),
+        title:museum.name, alt:museum.name, zIndexOffset:1000
+      });
+      const yandex='https://yandex.ru/maps/?text='+encodeURIComponent(museum.name+', '+museum.address+', Санкт-Петербург');
+      marker.bindPopup('<div style="--active:#684a90"><div class="pop-time">Необязательная остановка · без маршрута</div>'+
+        '<div class="pop-title">'+escapeHtml(museum.name)+'</div>'+
+        '<div class="pop-address">'+escapeHtml(museum.address)+'</div>'+
+        '<p><b>Часы:</b> '+escapeHtml(museum.hours)+'</p>'+
+        '<p><b>Билеты:</b> '+escapeHtml(museum.price)+'</p>'+
+        '<p>'+escapeHtml(museum.detail)+'</p>'+
+        '<div class="pop-actions"><a href="'+museum.site+'" target="_blank" rel="noopener">Билеты</a>'+
+        '<a href="'+yandex+'" target="_blank" rel="noopener">Яндекс Карты</a>'+
+        (museum.terms?'<a href="'+museum.terms+'" target="_blank" rel="noopener">Условия скидки</a>':'')+
+        '</div></div>');
+      marker.addTo(museumLayer);
+    });
     let markers = [];
     let bounds = null;
 
@@ -499,12 +553,32 @@
       return el;
     };
     legend.addTo(map);
+    const museumControl = L.control({position:'topleft'});
+    museumControl.onAdd = function(){
+      const el = L.DomUtil.create('div','museum-control');
+      const button = L.DomUtil.create('button','',el);
+      button.type='button';
+      button.textContent='🏛 Музеи · 2';
+      button.title='Показать два необязательных музея на карте';
+      button.setAttribute('aria-label','Показать два необязательных музея на карте');
+      L.DomEvent.disableClickPropagation(el);
+      L.DomEvent.disableScrollPropagation(el);
+      L.DomEvent.on(button,'click',function(){
+        const mobile=window.matchMedia('(max-width:780px)').matches;
+        const bottomPadding=panel.classList.contains('is-collapsed') ? 85 : 250;
+        map.fitBounds(L.latLngBounds(museums.map(function(x){return x.coords;})),{
+          paddingTopLeft:[30,30],paddingBottomRight:mobile?[30,bottomPadding]:[35,35],maxZoom:15
+        });
+      });
+      return el;
+    };
+    museumControl.addTo(map);
     function updateLegend(foodMode){
       const el = map.getContainer().querySelector('.legend');
       if(!el) return;
       el.innerHTML = foodMode
-        ? '<div class="legend-row"><span class="food-badge sale">−%</span>скидка</div><div class="legend-row">Нажмите точку: чек и меню</div>'
-        : '<div class="legend-row"><span class="legend-line"></span>пешком</div><div class="legend-row"><span class="legend-line dash"></span>транспорт</div>';
+        ? '<div class="legend-row"><span class="food-badge sale">−%</span>скидка</div><div class="legend-row">Нажмите точку: чек и меню</div><div class="legend-row">🏛 музеи — отдельно</div>'
+        : '<div class="legend-row"><span class="legend-line"></span>пешком</div><div class="legend-row"><span class="legend-line dash"></span>транспорт</div><div class="legend-row">🏛 музеи — отдельно</div>';
     }
 
     function yandexUrl(point){

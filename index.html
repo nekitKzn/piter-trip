@@ -193,7 +193,8 @@
       background: rgba(24,50,75,.93); color: white; font-size: .72rem; line-height: 1.35;
       box-shadow: var(--shadow);
     }
-    .sheet-handle { display: none; }
+    .sheet-toggle { display: none; }
+
 
     .food-view[hidden] { display: none !important; }
     .food-view { padding-bottom: 8px; }
@@ -260,9 +261,26 @@
       .panel {
         position: absolute; left: 0; right: 0; bottom: 0; height: 43%;
         border: 0; border-radius: 20px 20px 0 0; box-shadow: 0 -8px 30px rgba(18,37,51,.16);
-        padding: 23px 14px 28px;
+        padding: 0 14px 28px;
+        transition: height .24s ease;
       }
-      .sheet-handle { display: block; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 42px; height: 4px; background: #c6d0d5; border-radius: 99px; }
+      .sheet-toggle {
+        display: flex; align-items: center; justify-content: center; gap: 9px;
+        position: sticky; top: 0; z-index: 2;
+        width: calc(100% + 28px); min-height: 58px; margin: 0 -14px 12px;
+        padding: 11px 14px 0; border: 0; border-bottom: 1px solid var(--line);
+        background: #fff; color: var(--navy); font-size: .88rem; font-weight: 800; cursor: pointer;
+      }
+      .sheet-toggle::before {
+        content: ""; position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+        width: 42px; height: 4px; background: #bfcbd2; border-radius: 99px;
+      }
+      .sheet-toggle:focus-visible { outline: 2px solid var(--active); outline-offset: -4px; }
+      .panel.is-collapsed { height: calc(64px + env(safe-area-inset-bottom)); overflow: hidden; padding-bottom: env(safe-area-inset-bottom); }
+      .panel.is-collapsed > :not(.sheet-toggle) { display: none !important; }
+      .panel.is-collapsed .sheet-toggle { min-height: 64px; margin-bottom: 0; border-bottom: 0; }
+      main:has(.panel.is-collapsed) .notice { display: none; }
+      main:has(.panel.is-collapsed) .leaflet-control-zoom { margin-bottom: calc(64px + env(safe-area-inset-bottom) + 12px) !important; }
       .day-title { font-size: 1.22rem; }
       .day-note { font-size: .84rem; }
       .metrics { margin-top: 11px; }
@@ -294,7 +312,8 @@
     <nav class="days" role="tablist" aria-label="Выбор дня" id="dayTabs"></nav>
     <main>
       <aside class="panel" id="panel">
-        <span class="sheet-handle" aria-hidden="true"></span>
+        <button class="sheet-toggle" id="sheetToggle" type="button" aria-controls="sheetContent" aria-expanded="true"><span aria-hidden="true">⌄</span><span id="sheetToggleLabel">Скрыть список</span></button>
+        <div id="sheetContent">
         <section class="day-summary" id="summary"></section>
         <div class="tools">
           <button class="tool-btn" id="fitBtn">Показать весь маршрут</button>
@@ -320,6 +339,7 @@
           <p class="food-count" id="foodCount" aria-live="polite"></p>
           <div class="food-list" id="foodList"></div>
         </section>
+        </div>
       </aside>
       <div id="map" role="application" aria-label="Интерактивная карта маршрута"></div>
       <div class="notice">Линии показывают порядок остановок. Для точной навигации откройте нужную точку в Яндекс Картах.</div>
@@ -436,6 +456,24 @@
     let markers = [];
     let bounds = null;
 
+    const panel = document.getElementById('panel');
+    const sheetToggle = document.getElementById('sheetToggle');
+    const sheetContent = document.getElementById('sheetContent');
+    let savedSheetScroll = 0;
+    sheetToggle.addEventListener('click', function(){
+      if(!window.matchMedia('(max-width:780px)').matches) return;
+      const collapsed = !panel.classList.contains('is-collapsed');
+      if(collapsed){ savedSheetScroll = panel.scrollTop; panel.scrollTop = 0; }
+      panel.classList.toggle('is-collapsed', collapsed);
+      sheetToggle.setAttribute('aria-expanded', String(!collapsed));
+      sheetContent.setAttribute('aria-hidden', String(collapsed));
+      sheetContent.inert = collapsed;
+      document.getElementById('sheetToggleLabel').textContent = collapsed ? 'Показать список' : 'Скрыть список';
+      sheetToggle.querySelector('[aria-hidden="true"]').textContent = collapsed ? '⌃' : '⌄';
+      if(!collapsed) requestAnimationFrame(function(){ panel.scrollTop = savedSheetScroll; });
+      setTimeout(function(){ map.invalidateSize(); }, 260);
+    });
+
     const tabs = document.getElementById('dayTabs');
     const foodTab = document.createElement('button');
     foodTab.className = 'day-btn';
@@ -535,7 +573,8 @@
         card.addEventListener('click',open);
         card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();open();}});
       });
-      document.getElementById('panel').scrollTop=0;
+      savedSheetScroll=0;
+      panel.scrollTop=0;
       updateLegend(false);
       setTimeout(()=>map.invalidateSize(),80);
     }
@@ -574,7 +613,8 @@
     function fitFood(){
       if(!foodBounds) return;
       const mobile=window.matchMedia('(max-width:780px)').matches;
-      map.fitBounds(foodBounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,250]:[35,35],maxZoom:14});
+      const bottomPadding=panel.classList.contains('is-collapsed') ? 85 : 250;
+      map.fitBounds(foodBounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,bottomPadding]:[35,35],maxZoom:14});
     }
     function focusFood(i){
       const food=visibleFood[i];
@@ -653,7 +693,8 @@
       if(activeView==='food'){fitFood();return;}
       if(!bounds) return;
       const mobile=window.matchMedia('(max-width:780px)').matches;
-      map.fitBounds(bounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,250]:[35,35],maxZoom:15});
+      const bottomPadding=panel.classList.contains('is-collapsed') ? 85 : 250;
+      map.fitBounds(bounds,{paddingTopLeft:[28,28],paddingBottomRight:mobile?[28,bottomPadding]:[35,35],maxZoom:15});
     }
     function focusPoint(i){
       const point=days[current].points[i];
@@ -663,6 +704,8 @@
     }
 
     foodTab.addEventListener('click',function(){
+      savedSheetScroll=0;
+      panel.scrollTop=0;
       document.getElementById('foodDay').value='all';
       document.getElementById('foodSearch').value='';
       foodFilter='all';
@@ -688,7 +731,17 @@
       const payload={title:'Петербург · маршруты на 4 дня',text:'Наш маршрут по Санкт-Петербургу на 24–27 сентября 2026',url:location.href};
       try{ if(navigator.share){await navigator.share(payload);} else {await navigator.clipboard.writeText(location.href); alert('Ссылка скопирована');} }catch(e){}
     });
-    window.addEventListener('resize',()=>{map.invalidateSize();});
+    window.addEventListener('resize',()=>{
+      if(!window.matchMedia('(max-width:780px)').matches && panel.classList.contains('is-collapsed')){
+        panel.classList.remove('is-collapsed');
+        sheetToggle.setAttribute('aria-expanded','true');
+        sheetContent.setAttribute('aria-hidden','false');
+        sheetContent.inert=false;
+        document.getElementById('sheetToggleLabel').textContent='Скрыть список';
+        sheetToggle.querySelector('[aria-hidden="true"]').textContent='⌄';
+      }
+      map.invalidateSize();
+    });
     renderDay(0);
   </script>
 </body>
